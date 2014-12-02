@@ -20,6 +20,7 @@ import XMonad.Hooks.ManageDocks
 import XMonad.Util.Run(spawnPipe)
 import Data.Monoid
 import System.Exit
+import Graphics.X11.ExtraTypes.XF86
 
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
@@ -145,6 +146,8 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     -- Deincrement the number of windows in the master area
     , ((modm              , xK_period), sendMessage (IncMasterN (-1)))
 
+    , ((modm              , xK_grave), spawn "/usr/bin/mpc toggle")
+
     -- Toggle the status bar gap
     -- Use this binding with avoidStruts from Hooks.ManageDocks.
     -- See also the statusBar function from Hooks.DynamicLog.
@@ -158,7 +161,20 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     , ((modm              , xK_q     ), spawn "xmonad --recompile; xmonad --restart")
 
     -- Lock screen
-    , ((modm .|. shiftMask, xK_l     ), spawn "xscreensaver-command -l")
+    , ((modm .|. shiftMask, xK_l     ), spawn "/home/paul/bin/mylock")
+
+    , ((0, xF86XK_AudioLowerVolume   ), spawn "amixer -c 1 set Master 2-")
+
+    , ((0, xF86XK_AudioRaiseVolume   ), spawn "amixer -c 1 set Master 2+")
+
+    , ((0, xF86XK_AudioMute          ), spawn "amixer -c 1 set Master toggle")
+
+    , ((0, xF86XK_AudioPlay          ), spawn "/usr/bin/mpc toggle")
+
+    , ((0, xF86XK_AudioPrev          ), spawn "/usr/bin/mpc prev")
+
+    , ((0, xF86XK_AudioNext          ), spawn "/usr/bin/mpc next")
+
     ]
     ++
 
@@ -295,7 +311,8 @@ myLogHook = return ()
 -- It will add initialization of EWMH support to your custom startup
 -- hook by combining it with ewmhDesktopsStartup.
 --
-myStartupHook = return ()
+myStartupHook = do
+        spawn "/home/paul/bin/a"
 
 ------------------------------------------------------------------------
 -- Now run xmonad with all the defaults we set up.
@@ -304,7 +321,10 @@ myStartupHook = return ()
 --
 main = do
     xmproc <- spawnPipe "/usr/bin/xmobar"
-    xscreen <- spawnPipe "/usr/bin/xscreensaver"
+    xscreen <- spawnPipe "/usr/bin/xscreensaver -no-splash"
+    -- trayer <- spawnPipe "/usr/bin/trayer --edge bottom --align right --heighttype request --SetPartialStrut true --expand true"
+    fbpanel <- spawnPipe "/usr/bin/fbpanel"
+    unclutter <- spawnPipe "/usr/bin/unclutter"
     xmonad $ defaultConfig {
         manageHook = manageDocks <+> myManageHook <+> manageHook defaultConfig,
         layoutHook = avoidStruts $ layoutHook defaultConfig,
