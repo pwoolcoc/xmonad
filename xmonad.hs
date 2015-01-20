@@ -15,12 +15,22 @@
 -- http://www.haskell.org/haskellwiki/Xmonad/Notable_changes_since_0.8
 --
 
+import System.IO (hPutStrLn)
+
 import XMonad
 import XMonad.Hooks.ManageDocks
 import XMonad.Util.Run(spawnPipe)
 import Data.Monoid
 import System.Exit
 import Graphics.X11.ExtraTypes.XF86
+import XMonad.Hooks.DynamicLog
+import XMonad.Hooks.ICCCMFocus
+import XMonad.Layout.IM
+import XMonad.Layout.Named
+import XMonad.Layout.NoBorders
+import XMonad.Layout.PerWorkspace
+import XMonad.Layout.Reflect
+import XMonad.Layout.ToggleLayouts
 
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
@@ -77,7 +87,7 @@ myModMask       = mod4Mask
 --
 -- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
 --
-myWorkspaces    = ["1","2","3","4","5","6","7","8","9"]
+myWorkspaces    = ["1:code", "2:web", "3:chat", "4:music", "5:android", "6:gimp"] ++ map show [7..9]
 
 -- Border colors for unfocused and focused windows, respectively.
 --
@@ -146,8 +156,6 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     -- Deincrement the number of windows in the master area
     , ((modm              , xK_period), sendMessage (IncMasterN (-1)))
 
-    , ((modm              , xK_grave), spawn "/usr/bin/mpc toggle")
-
     -- Toggle the status bar gap
     -- Use this binding with avoidStruts from Hooks.ManageDocks.
     -- See also the statusBar function from Hooks.DynamicLog.
@@ -171,9 +179,13 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
 
     , ((0, xF86XK_AudioPlay          ), spawn "/usr/bin/mpc toggle")
 
-    , ((0, xF86XK_AudioPrev          ), spawn "/usr/bin/mpc prev")
+    , ((modm .|. shiftMask, xK_grave ), spawn "/usr/bin/mpc toggle")
+
+    , ((0, xF86XK_AudioPrev          ), spawn "/usr/bin/mpc cdprev")
 
     , ((0, xF86XK_AudioNext          ), spawn "/usr/bin/mpc next")
+
+    , ((modm            , xK_f      ), sendMessage ToggleLayout)
 
     ]
     ++
@@ -234,19 +246,7 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
 -- The available layouts.  Note that each layout is separated by |||,
 -- which denotes layout choice.
 --
-myLayout = Full ||| tiled ||| Mirror tiled
-  where
-    -- default tiling algorithm partitions the screen into two panes
-    tiled   = Tall nmaster delta ratio
-
-    -- The default number of windows in the master pane
-    nmaster = 1
-
-    -- Default proportion of screen occupied by master pane
-    ratio   = 1/2
-
-    -- Percent of screen to increment by when resizing panes
-    delta   = 3/100
+myLayout = avoidStruts $ smartBorders $ toggleLayouts Full workspaceLayouts
 
 ------------------------------------------------------------------------
 -- Window rules:
@@ -265,7 +265,7 @@ myLayout = Full ||| tiled ||| Mirror tiled
 --
 myManageHook = composeAll
     [ className =? "MPlayer"        --> doFloat
-    , className =? "Gimp"           --> doFloat
+    -- , className =? "Gimp"           --> doFloat
     , resource  =? "desktop_window" --> doIgnore
     , resource  =? "kdesktop"       --> doIgnore ]
 
@@ -295,7 +295,7 @@ myEventHook = mempty
 -- It will add EWMH logHook actions to your custom log hook by
 -- combining it with ewmhDesktopsLogHook.
 --
-myLogHook = return ()
+myLogHook = takeTopFocus
 
 ------------------------------------------------------------------------
 -- Startup hook
@@ -314,6 +314,25 @@ myLogHook = return ()
 myStartupHook = do
         spawn "/home/paul/bin/a"
 
+workspaceLayouts =
+    onWorkspace "6:gimp" gimpLayout $
+    defaultLayouts
+    where
+        gimpLayout = withIM (0.11) (Role "gimp-toolbox") $
+                     reflectHoriz $
+                     withIM (0.15) (Role "gimp-dock") Full
+
+        tiled   = Tall nmaster delta ratio
+
+        nmaster = 1
+
+        ratio   = 1/2
+
+        delta   = 3/100
+
+        defaultLayouts = Full ||| tiled ||| Mirror tiled
+
+
 ------------------------------------------------------------------------
 -- Now run xmonad with all the defaults we set up.
 
@@ -322,12 +341,12 @@ myStartupHook = do
 main = do
     xmproc <- spawnPipe "/usr/bin/xmobar"
     xscreen <- spawnPipe "/usr/bin/xscreensaver -no-splash"
-    -- trayer <- spawnPipe "/usr/bin/trayer --edge bottom --align right --heighttype request --SetPartialStrut true --expand true"
     fbpanel <- spawnPipe "/usr/bin/fbpanel"
-    unclutter <- spawnPipe "/usr/bin/unclutter"
+    offlineimap <- spawnPipe "/usr/bin/offlineimap"
     xmonad $ defaultConfig {
         manageHook = manageDocks <+> myManageHook <+> manageHook defaultConfig,
-        layoutHook = avoidStruts $ layoutHook defaultConfig,
+        layoutHook = myLayout,
+
       -- simple stuff
         terminal           = myTerminal,
         focusFollowsMouse  = myFocusFollowsMouse,
