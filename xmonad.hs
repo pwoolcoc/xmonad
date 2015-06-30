@@ -1,4 +1,4 @@
---
+
 -- xmonad example config file for xmonad-0.9
 --
 -- A template showing all available configuration hooks,
@@ -87,7 +87,7 @@ myModMask       = mod4Mask
 --
 -- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
 --
-myWorkspaces    = ["1:code", "2:web", "3:chat", "4:music", "5:android", "6:gimp"] ++ map show [7..9]
+myWorkspaces    = ["1:code", "2:web", "3:chat", "4:windows"] ++ map show [5..9]
 
 -- Border colors for unfocused and focused windows, respectively.
 --
@@ -171,19 +171,19 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     -- Lock screen
     , ((modm .|. shiftMask, xK_l     ), spawn "/home/paul/bin/mylock")
 
-    , ((0, xF86XK_AudioLowerVolume   ), spawn "amixer -c 1 set Master 2-")
+    , ((0, xF86XK_AudioLowerVolume   ), spawn "mixer vol -2")
 
-    , ((0, xF86XK_AudioRaiseVolume   ), spawn "amixer -c 1 set Master 2+")
+    , ((0, xF86XK_AudioRaiseVolume   ), spawn "mixer vol +2")
 
-    , ((0, xF86XK_AudioMute          ), spawn "amixer -c 1 set Master toggle")
+    , ((0, xF86XK_AudioMute          ), spawn "mixer vol 0:0")
 
-    , ((0, xF86XK_AudioPlay          ), spawn "/usr/bin/mpc toggle")
+    , ((0, xF86XK_AudioPlay          ), spawn "/usr/local/bin/mpc -h $HOME/.mpd/socket toggle")
 
-    , ((modm .|. shiftMask, xK_grave ), spawn "/usr/bin/mpc toggle")
+    , ((modm .|. shiftMask, xK_grave ), spawn "/usr/local/bin/mpc -h $HOME/.mpd/socket toggle")
 
-    , ((0, xF86XK_AudioPrev          ), spawn "/usr/bin/mpc cdprev")
+    , ((0, xF86XK_AudioPrev          ), spawn "/usr/local/bin/mpc -h $HOME/.mpd/socket cdprev")
 
-    , ((0, xF86XK_AudioNext          ), spawn "/usr/bin/mpc next")
+    , ((0, xF86XK_AudioNext          ), spawn "/usr/local/bin/mpc -h $HOME/.mpd/socket next")
 
     , ((modm            , xK_f      ), sendMessage ToggleLayout)
 
@@ -339,33 +339,31 @@ workspaceLayouts =
 -- Run xmonad with the settings you specify. No need to modify this.
 --
 main = do
-    xmproc <- spawnPipe "/usr/bin/xmobar"
-    xscreen <- spawnPipe "/usr/bin/xscreensaver -no-splash"
-    fbpanel <- spawnPipe "/usr/bin/fbpanel"
-    offlineimap <- spawnPipe "/usr/bin/offlineimap"
-    xmonad $ defaultConfig {
-        manageHook = manageDocks <+> myManageHook <+> manageHook defaultConfig,
-        layoutHook = myLayout,
+    xmproc <- spawnPipe "/usr/local/bin/xmobar"
+    xscreen <- spawnPipe "/usr/local/bin/xscreensaver -no-splash"
+    -- fbpanel <- spawnPipe "/usr/local/bin/fbpanel"
+    -- offlineimap <- spawnPipe "/usr/local/bin/offlineimap"
+    xmonad $ defaultConfig
+        { manageHook = manageDocks <+> myManageHook <+> manageHook defaultConfig
+        , layoutHook = myLayout
 
       -- simple stuff
-        terminal           = myTerminal,
-        focusFollowsMouse  = myFocusFollowsMouse,
-        borderWidth        = myBorderWidth,
-        modMask            = myModMask,
-        -- numlockMask deprecated in 0.9.1
-        -- numlockMask        = myNumlockMask,
-        workspaces         = myWorkspaces,
-        normalBorderColor  = myNormalBorderColor,
-        focusedBorderColor = myFocusedBorderColor,
+        , terminal           = myTerminal
+        , focusFollowsMouse  = myFocusFollowsMouse
+        , borderWidth        = myBorderWidth
+        , modMask            = myModMask
+        , workspaces         = myWorkspaces
+        , normalBorderColor  = myNormalBorderColor
+        , focusedBorderColor = myFocusedBorderColor
 
       -- key bindings
-        keys               = myKeys,
-        mouseBindings      = myMouseBindings,
+        , keys               = myKeys
+        , mouseBindings      = myMouseBindings
 
-      -- hooks, layouts
-        -- layoutHook         = myLayout,
-        -- manageHook         = myManageHook,
-        handleEventHook    = myEventHook,
-        logHook            = myLogHook,
-        startupHook        = myStartupHook
+        , handleEventHook    = myEventHook
+        , logHook            = dynamicLogWithPP xmobarPP
+                                { ppOutput = hPutStrLn xmproc
+                                , ppUrgent = xmobarColor "red" "yellow"
+                                }
+        , startupHook        = myStartupHook
     }

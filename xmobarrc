@@ -14,14 +14,16 @@ Config { font = "-misc-fixed-*-*-*-*-10-*-*-*-*-*-*-*"
                     , Run Memory ["-t","Mem: <usedratio>%"] 10
                     , Run Swap [] 10
                     , Run Com "uname" ["-s","-r"] "" 36000
-                    , Run Date "%a %b %_d %Y %H:%M:%S" "date" 10
-                    , Run BatteryP ["BAT0"] ["-t", "<acstatus><watts> (<left>%)",
-                                             "-L", "10", "-H", "80", "-p", "3",
-                                             "--", "-O", "<fc=green>On</fc> - ",
-                                             "-i", "", "-L", "-15", "-H", "-5",
-                                             "-l", "red", "-m", "blue", "-h", "green"] 600
+                    , Run Date "%a %b %_d %Y %H:%M:%S %z" "date" 10
+                    , Run Com "/home/paul/bin/batt" [] "batt_pct" 60
+                    , Run Com "/home/paul/bin/power" [] "power" 60
+                    , Run Com "/home/paul/bin/mympc" [] "mpc" 10
+                    , Run Com "/usr/sbin/mixer" ["-S", "vol"] "mixer" 10
+                    , Run Com "/home/paul/bin/load" [] "load" 10
+                    , Run UnsafeStdinReader
                     ]
        , sepChar = "%"
        , alignSep = "}{"
-       , template = "%cpu% | %memory% * %swap% | %eth0% - %eth1% | %battery% }{ <fc=#ee9a00>%date%</fc>| %KFNT% | %uname%"
+       , template = "%UnsafeStdinReader% | %load% | AC: <fc=#00ff00>%power%</fc> Remaining: <fc=#00ff00>%batt_pct%</fc> | <fc=#ff0000>%mpc%</fc> | %mixer% }{ <fc=#ee9a00>%date%</fc> | %KFNT% | %uname%"
        }
+
